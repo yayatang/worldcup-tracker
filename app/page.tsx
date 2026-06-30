@@ -1,65 +1,142 @@
-import Image from "next/image";
+export const dynamic = "force-dynamic";
 
-export default function Home() {
+import { Suspense } from "react";
+import { getMatches, getStandings } from "@/lib/football-data";
+import MatchCard from "@/components/MatchCard";
+import GroupTable from "@/components/GroupTable";
+import type { Match } from "@/lib/football-data";
+
+function sortByDate(a: Match, b: Match) {
+  return new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime();
+}
+
+async function LiveMatches() {
+  const matches = await getMatches();
+  const live = matches.filter(
+    (m) => m.status === "IN_PLAY" || m.status === "PAUSED"
+  );
+  if (live.length === 0) return null;
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <section className="mb-8">
+      <h2 className="text-lg font-bold mb-3 text-green-400">Live Now</h2>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {live.map((m) => <MatchCard key={m.id} match={m} />)}
+      </div>
+    </section>
+  );
+}
+
+async function UpcomingMatches() {
+  const matches = await getMatches();
+  const now = Date.now();
+  const upcoming = matches
+    .filter((m) => m.status === "SCHEDULED" || m.status === "TIMED")
+    .filter((m) => new Date(m.utcDate).getTime() > now)
+    .sort(sortByDate)
+    .slice(0, 6);
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-bold">Upcoming Matches</h2>
+        <a href="/schedule" className="text-sm text-green-400 hover:underline">
+          Full Schedule →
+        </a>
+      </div>
+      {upcoming.length === 0 ? (
+        <p className="text-neutral-500 text-sm">No upcoming matches found.</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {upcoming.map((m) => <MatchCard key={m.id} match={m} />)}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
+    </section>
+  );
+}
+
+async function RecentResults() {
+  const matches = await getMatches();
+  const recent = matches
+    .filter((m) => m.status === "FINISHED")
+    .sort((a, b) => sortByDate(b, a))
+    .slice(0, 6);
+  if (recent.length === 0) return null;
+  return (
+    <section className="mb-8">
+      <h2 className="text-lg font-bold mb-3">Recent Results</h2>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {recent.map((m) => <MatchCard key={m.id} match={m} />)}
+      </div>
+    </section>
+  );
+}
+
+async function GroupsSnapshot() {
+  const standings = await getStandings();
+  const groupStandings = standings.filter(
+    (s) => s.type === "TOTAL" && s.group
+  );
+  if (groupStandings.length === 0) return null;
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-bold">Group Standings</h2>
+        <a href="/bracket" className="text-sm text-green-400 hover:underline">
+          Full Bracket →
+        </a>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {groupStandings.map((s, i) => (
+          <GroupTable key={i} standing={s} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-black tracking-tight">
+          FIFA World Cup <span className="text-green-400">2026</span>
+        </h1>
+        <p className="text-neutral-400 text-sm mt-1">
+          USA · Canada · Mexico &nbsp;·&nbsp; June 11 – July 19, 2026
+        </p>
+      </div>
+
+      <Suspense fallback={null}>
+        <LiveMatches />
+      </Suspense>
+
+      <Suspense
+        fallback={
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-neutral-900 border border-neutral-800 rounded-xl h-28 animate-pulse" />
+            ))}
+          </div>
+        }
+      >
+        <UpcomingMatches />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <RecentResults />
+      </Suspense>
+
+      <Suspense
+        fallback={
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-neutral-900 border border-neutral-800 rounded-xl h-48 animate-pulse" />
+            ))}
+          </div>
+        }
+      >
+        <GroupsSnapshot />
+      </Suspense>
     </div>
   );
 }
