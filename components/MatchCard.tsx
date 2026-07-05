@@ -1,98 +1,80 @@
-import type { Match } from "@/lib/football-data";
+import type { EspnMatch } from "@/lib/espn";
 
-const STATUS_STYLES: Record<string, string> = {
-  IN_PLAY: "bg-green-600 text-white animate-pulse",
-  PAUSED: "bg-yellow-600 text-white",
-  FINISHED: "bg-neutral-700 text-neutral-300",
-  SCHEDULED: "bg-blue-900 text-blue-200",
-  TIMED: "bg-blue-900 text-blue-200",
-  POSTPONED: "bg-red-900 text-red-300",
-  CANCELLED: "bg-red-900 text-red-300",
+const STATUS_BADGE: Record<string, { cls: string; label: string }> = {
+  IN_PLAY:    { cls: "bg-green-600 text-white animate-pulse", label: "LIVE" },
+  PAUSED:     { cls: "bg-yellow-600 text-white",             label: "HT"   },
+  EXTRA_TIME: { cls: "bg-orange-600 text-white",             label: "AET"  },
+  PENALTY:    { cls: "bg-purple-700 text-white",             label: "PENS" },
+  FINISHED:   { cls: "bg-neutral-700 text-neutral-300",      label: "FT"   },
+  SCHEDULED:  { cls: "bg-blue-900 text-blue-200",            label: "Soon" },
+  POSTPONED:  { cls: "bg-red-900 text-red-300",              label: "PPD"  },
+  CANCELLED:  { cls: "bg-red-900 text-red-300",              label: "CXL"  },
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  IN_PLAY: "LIVE",
-  PAUSED: "HT",
-  FINISHED: "FT",
-  SCHEDULED: "Upcoming",
-  TIMED: "Upcoming",
-  POSTPONED: "Postponed",
-  CANCELLED: "Cancelled",
-};
-
-function formatDate(utcDate: string) {
-  return new Date(utcDate).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+function formatMatchDate(utcDate: string) {
+  return new Date(utcDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-function formatTime(utcDate: string) {
-  return new Date(utcDate).toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function formatMatchTime(utcDate: string) {
+  return new Date(utcDate).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function MatchCard({ match }: { match: Match }) {
-  const isLive = match.status === "IN_PLAY" || match.status === "PAUSED";
-  const isFinished = match.status === "FINISHED";
-  const hasScore = isLive || isFinished;
+export default function MatchCard({ match }: { match: EspnMatch }) {
+  const badge = STATUS_BADGE[match.status] ?? STATUS_BADGE.SCHEDULED;
+  const hasScore = ["IN_PLAY", "PAUSED", "FINISHED", "EXTRA_TIME", "PENALTY"].includes(match.status);
+  const homeWon = match.winner === "home";
+  const awayWon = match.winner === "away";
 
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs text-neutral-500">
-          {match.group?.replace("GROUP_", "Group ") ?? match.stage.replace(/_/g, " ")}
-          {match.matchday ? ` · MD${match.matchday}` : ""}
+          {match.group ?? match.stage.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
         </span>
-        <span
-          className={`text-xs font-semibold px-2 py-0.5 rounded ${STATUS_STYLES[match.status] ?? "bg-neutral-700 text-neutral-300"}`}
-        >
-          {STATUS_LABEL[match.status] ?? match.status}
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded ${badge.cls}`}>
+          {badge.label}
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {/* Home */}
         <div className="flex-1 flex items-center gap-2 justify-end">
-          <span className="font-semibold text-sm text-right leading-tight">
-            {match.homeTeam.shortName || match.homeTeam.name}
+          <span className={`font-semibold text-sm text-right leading-tight ${homeWon ? "text-white" : "text-neutral-300"}`}>
+            {match.home.tla}
           </span>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={match.homeTeam.crest} alt="" className="w-8 h-8 object-contain" />
+          <img src={match.home.logo} alt="" className="w-8 h-8 object-contain" />
         </div>
 
         {/* Score / Time */}
         <div className="flex-shrink-0 text-center w-20">
           {hasScore ? (
-            <span className="text-xl font-bold tabular-nums">
-              {match.score.fullTime.home ?? "–"} : {match.score.fullTime.away ?? "–"}
+            <span className="text-2xl font-bold tabular-nums">
+              {match.homeScore ?? "–"}&nbsp;:&nbsp;{match.awayScore ?? "–"}
             </span>
           ) : (
             <div className="text-xs text-neutral-400">
-              <div>{formatDate(match.utcDate)}</div>
-              <div className="font-semibold text-white">{formatTime(match.utcDate)}</div>
+              <div>{formatMatchDate(match.utcDate)}</div>
+              <div className="font-bold text-white text-sm">{formatMatchTime(match.utcDate)}</div>
             </div>
+          )}
+          {match.statusDetail && hasScore && (
+            <div className="text-xs text-neutral-500 mt-0.5">{match.statusDetail}</div>
           )}
         </div>
 
         {/* Away */}
         <div className="flex-1 flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={match.awayTeam.crest} alt="" className="w-8 h-8 object-contain" />
-          <span className="font-semibold text-sm leading-tight">
-            {match.awayTeam.shortName || match.awayTeam.name}
+          <img src={match.away.logo} alt="" className="w-8 h-8 object-contain" />
+          <span className={`font-semibold text-sm leading-tight ${awayWon ? "text-white" : "text-neutral-300"}`}>
+            {match.away.tla}
           </span>
         </div>
       </div>
 
-      {isLive && (
-        <p className="text-center text-xs text-green-400 mt-2">● In Progress</p>
-      )}
-      {!hasScore && (
-        <p className="text-center text-xs text-neutral-600 mt-2">{formatDate(match.utcDate)}</p>
+      {match.status === "IN_PLAY" && (
+        <p className="text-center text-xs text-green-400 mt-2">● {match.statusDetail}</p>
       )}
     </div>
   );

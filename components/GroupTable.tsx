@@ -1,17 +1,15 @@
-import type { Standing } from "@/lib/football-data";
+import type { EspnGroup } from "@/lib/espn";
 
-export default function GroupTable({ standing }: { standing: Standing }) {
-  const groupLabel = standing.group?.replace("GROUP_", "Group ") ?? "Group";
-
+export default function GroupTable({ group }: { group: EspnGroup }) {
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
       <div className="px-4 py-2 bg-neutral-800 font-semibold text-sm text-neutral-200">
-        {groupLabel}
+        {group.name}
       </div>
       <table className="w-full text-xs">
         <thead>
           <tr className="text-neutral-500 border-b border-neutral-800">
-            <th className="text-left px-3 py-1.5 font-medium w-6">#</th>
+            <th className="text-left px-3 py-1.5 font-medium w-5">#</th>
             <th className="text-left px-3 py-1.5 font-medium">Team</th>
             <th className="text-center px-2 py-1.5 font-medium">P</th>
             <th className="text-center px-2 py-1.5 font-medium">W</th>
@@ -22,25 +20,27 @@ export default function GroupTable({ standing }: { standing: Standing }) {
           </tr>
         </thead>
         <tbody>
-          {standing.table.map((row, i) => (
+          {group.rows.map((row) => (
             <tr
               key={row.team.id}
-              className={`border-b border-neutral-800 last:border-0 ${i < 2 ? "text-white" : "text-neutral-400"}`}
+              className={`border-b border-neutral-800 last:border-0 ${
+                row.advanced ? "text-white" : row.position <= 2 ? "text-neutral-200" : "text-neutral-500"
+              }`}
             >
               <td className="px-3 py-2 text-neutral-500">{row.position}</td>
               <td className="px-3 py-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={row.team.crest} alt="" className="w-4 h-4 object-contain" />
-                  <span className="font-medium">{row.team.shortName || row.team.tla}</span>
+                  <img src={row.team.logo} alt="" className="w-4 h-4 object-contain" />
+                  <span className="font-medium">{row.team.tla}</span>
                 </div>
               </td>
-              <td className="text-center px-2 py-2">{row.playedGames}</td>
+              <td className="text-center px-2 py-2">{row.played}</td>
               <td className="text-center px-2 py-2">{row.won}</td>
-              <td className="text-center px-2 py-2">{row.draw}</td>
+              <td className="text-center px-2 py-2">{row.drawn}</td>
               <td className="text-center px-2 py-2">{row.lost}</td>
               <td className="text-center px-2 py-2">
-                {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
+                {row.goalDiff > 0 ? `+${row.goalDiff}` : row.goalDiff}
               </td>
               <td className="text-center px-2 py-2 font-bold text-white">{row.points}</td>
             </tr>

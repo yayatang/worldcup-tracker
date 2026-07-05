@@ -1,192 +1,130 @@
-import type { Match, Standing, StandingEntry } from "./football-data";
-
-// Standard World Cup 2026 bracket pairing by group position
-// Format: 48 teams, 12 groups (A–L), top 2 per group + 8 best 3rd-place teams advance
-// Round of 32 matchups follow FIFA's official bracket
+import type { EspnMatch, EspnGroup, EspnTeam } from "./espn";
+import { stageName } from "./espn";
 
 export interface BracketTeam {
-  tla: string;
+  id: string;
   name: string;
-  shortName: string;
-  crest: string;
-  seed?: string; // e.g. "1A", "2B", "3rd-D/E/F"
+  tla: string;
+  logo: string;
+  seed?: string;
 }
 
 export interface BracketMatch {
-  id?: number;
-  label: string; // e.g. "R32-M1"
-  homeTeam: BracketTeam | null;
-  awayTeam: BracketTeam | null;
+  id?: string;
+  label: string;
+  home: BracketTeam | null;
+  away: BracketTeam | null;
   homeScore: number | null;
   awayScore: number | null;
   status: string;
+  statusDetail: string;
   winner: "home" | "away" | null;
   utcDate: string | null;
+  projected: boolean;
 }
 
 export interface BracketRound {
+  slug: string;
   name: string;
   matches: BracketMatch[];
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+const KNOCKOUT_SLUGS = [
+  "round-of-32",
+  "round-of-16",
+  "quarterfinals",
+  "semifinals",
+  "3rd-place-match",
+  "final",
+];
 
-function teamFromEntry(entry: StandingEntry, seed: string): BracketTeam {
-  return {
-    tla: entry.team.tla,
-    name: entry.team.name,
-    shortName: entry.team.shortName,
-    crest: entry.team.crest,
-    seed,
-  };
+function toTeam(t: EspnTeam, seed?: string): BracketTeam {
+  return { id: t.id, name: t.name, tla: t.tla, logo: t.logo, seed };
 }
 
-function teamFromMatch(match: Match, side: "home" | "away"): BracketTeam {
-  const t = side === "home" ? match.homeTeam : match.awayTeam;
-  return { tla: t.tla, name: t.name, shortName: t.shortName, crest: t.crest };
-}
-
-function winnerOfMatch(m: Match): "home" | "away" | null {
-  if (m.score.winner === "HOME_TEAM") return "home";
-  if (m.score.winner === "AWAY_TEAM") return "away";
-  return null;
-}
-
-function toBracketMatch(m: Match, label: string): BracketMatch {
-  const w = winnerOfMatch(m);
+function matchFromEspn(m: EspnMatch, label: string): BracketMatch {
+  const w = m.winner === "home" ? "home" : m.winner === "away" ? "away" : null;
   return {
     id: m.id,
     label,
-    homeTeam: teamFromMatch(m, "home"),
-    awayTeam: teamFromMatch(m, "away"),
-    homeScore: m.score.fullTime.home,
-    awayScore: m.score.fullTime.away,
+    home: toTeam(m.home),
+    away: toTeam(m.away),
+    homeScore: m.homeScore,
+    awayScore: m.awayScore,
     status: m.status,
+    statusDetail: m.statusDetail,
     winner: w,
     utcDate: m.utcDate,
+    projected: false,
   };
 }
 
-// ── Top-level export ──────────────────────────────────────────────────────────
+export function buildBracket(matches: EspnMatch[], groups: EspnGroup[]): BracketRound[] {
+  const knockoutMatches = matches.filter((m) => KNOCKOUT_SLUGS.includes(m.stage));
 
-/**
- * Build bracket rounds from standings + all matches.
- * Returns rounds in order: Round of 32, Round of 16, Quarter-finals,
- * Semi-finals, 3rd Place, Final.
- */
-export function buildBracket(
-  standings: Standing[],
-  allMatches: Match[]
-): BracketRound[] {
-  const knockoutStages = [
-    "ROUND_OF_32",
-    "LAST_16",
-    "QUARTER_FINALS",
-    "SEMI_FINALS",
-    "THIRD_PLACE",
-    "FINAL",
-  ];
-
-  const stageLabels: Record<string, string> = {
-    ROUND_OF_32: "Round of 32",
-    LAST_16: "Round of 16",
-    QUARTER_FINALS: "Quarter-finals",
-    SEMI_FINALS: "Semi-finals",
-    THIRD_PLACE: "3rd Place",
-    FINAL: "Final",
-  };
-
-  // Group knockout matches by stage (as returned by the API)
-  const byStage: Record<string, Match[]> = {};
-  for (const m of allMatches) {
-    if (knockoutStages.includes(m.stage)) {
-      byStage[m.stage] = byStage[m.stage] ?? [];
-      byStage[m.stage].push(m);
+  if (knockoutMatches.length > 0) {
+    // API has knockout matches — group them by stage
+    const bySlug: Record<string, EspnMatch[]> = {};
+    for (const m of knockoutMatches) {
+      bySlug[m.stage] = bySlug[m.stage] ?? [];
+      bySlug[m.stage].push(m);
     }
-  }
 
-  const rounds: BracketRound[] = [];
-
-  for (const stage of knockoutStages) {
-    const stageMatches = byStage[stage] ?? [];
-    if (stageMatches.length === 0) continue;
-
-    stageMatches.sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime());
-
-    rounds.push({
-      name: stageLabels[stage] ?? stage,
-      matches: stageMatches.map((m, i) =>
-        toBracketMatch(m, `${stage}-${i + 1}`)
-      ),
+    return KNOCKOUT_SLUGS.filter((slug) => bySlug[slug]?.length).map((slug) => {
+      const stageMatches = [...bySlug[slug]].sort(
+        (a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime()
+      );
+      return {
+        slug,
+        name: stageName(slug),
+        matches: stageMatches.map((m, i) =>
+          matchFromEspn(m, `${stageName(slug)} · Match ${i + 1}`)
+        ),
+      };
     });
   }
 
-  // If the API hasn't scheduled knockout matches yet, project R32 from standings
-  if (rounds.length === 0) {
-    rounds.push(buildProjectedR32(standings));
-  }
-
-  return rounds;
+  // No knockout data yet — project R32 from group standings
+  return [projectR32(groups)];
 }
 
-/**
- * Project Round of 32 based on current group standings.
- * World Cup 2026: 12 groups (A–L), top 2 per group advance directly.
- * The 8 best 3rd-place teams also advance (shown as TBD until official).
- *
- * Official FIFA bracket pairing (tentative, may shift based on host-nation rules):
- * Groups and their projected R32 matchups follow standard FIFA seeding.
- */
-function buildProjectedR32(standings: Standing[]): BracketRound {
-  // Build a map: group letter → sorted table
-  const groupMap: Record<string, StandingEntry[]> = {};
-  for (const s of standings) {
-    if (s.type === "TOTAL" && s.group) {
-      const letter = s.group.replace(/^GROUP_/, "");
-      groupMap[letter] = [...s.table].sort((a, b) => a.position - b.position);
-    }
+// Standard WC 2026 R32 pairing: 1A-2B, 1B-2A, 1C-2D, 1D-2C ...
+// Using the 12-group format (groups A-L)
+function projectR32(groups: EspnGroup[]): BracketRound {
+  const byGroup: Record<string, EspnGroup> = {};
+  for (const g of groups) {
+    const letter = g.name.replace("Group ", "");
+    byGroup[letter] = g;
   }
 
-  function pick(group: string, pos: 1 | 2): BracketTeam | null {
-    const table = groupMap[group];
-    if (!table || table.length < pos) return null;
-    return teamFromEntry(table[pos - 1], `${pos}${group}`);
+  function pick(group: string, pos: number): BracketTeam | null {
+    const g = byGroup[group];
+    if (!g) return null;
+    const row = g.rows.find((r) => r.position === pos);
+    if (!row) return null;
+    return toTeam(row.team, `${pos}${group}`);
   }
 
-  // 2026 World Cup projected R32 pairings (FIFA official bracket not confirmed yet
-  // for 3rd-place wildcards — those slots are labeled TBD)
-  const pairings: [string | null, string | null, string | null, string | null, string][] = [
-    // [home-group, home-pos, away-group, away-pos, label]
-    // Each entry: winner of group X pos vs winner of group Y pos
-    ["A", "1", "B", "2", "R32-1"],
-    ["C", "1", "D", "2", "R32-2"],
-    ["E", "1", "F", "2", "R32-3"],
-    ["G", "1", "H", "2", "R32-4"],
-    ["I", "1", "J", "2", "R32-5"],
-    ["K", "1", "L", "2", "R32-6"],
-    ["B", "1", "A", "2", "R32-7"],
-    ["D", "1", "C", "2", "R32-8"],
-    ["F", "1", "E", "2", "R32-9"],
-    ["H", "1", "G", "2", "R32-10"],
-    ["J", "1", "I", "2", "R32-11"],
-    ["L", "1", "K", "2", "R32-12"],
-    // 3rd-place wildcards (4 matches, opponents TBD)
-    [null, null, null, null, "R32-13 (3rd place)"],
-    [null, null, null, null, "R32-14 (3rd place)"],
-    [null, null, null, null, "R32-15 (3rd place)"],
-    [null, null, null, null, "R32-16 (3rd place)"],
+  const pairings: [string, number, string, number][] = [
+    ["A", 1, "B", 2], ["C", 1, "D", 2], ["E", 1, "F", 2],
+    ["G", 1, "H", 2], ["I", 1, "J", 2], ["K", 1, "L", 2],
+    ["B", 1, "A", 2], ["D", 1, "C", 2], ["F", 1, "E", 2],
+    ["H", 1, "G", 2], ["J", 1, "I", 2], ["L", 1, "K", 2],
+    // 4 best 3rd-place slots (TBD until after group stage)
   ];
 
-  const matches: BracketMatch[] = pairings.map(([hg, hp, ag, ap, label]) => ({
-    label,
-    homeTeam: hg && hp ? pick(hg, parseInt(hp) as 1 | 2) : null,
-    awayTeam: ag && ap ? pick(ag, parseInt(ap) as 1 | 2) : null,
+  const matches: BracketMatch[] = pairings.map(([hg, hp, ag, ap], i) => ({
+    label: `R32 · Match ${i + 1}`,
+    home: pick(hg, hp),
+    away: pick(ag, ap),
     homeScore: null,
     awayScore: null,
-    status: "PROJECTED",
+    status: "SCHEDULED",
+    statusDetail: "Projected",
     winner: null,
     utcDate: null,
+    projected: true,
   }));
 
-  return { name: "Round of 32 (Projected)", matches };
+  return { slug: "round-of-32", name: "Round of 32 (Projected)", matches };
 }

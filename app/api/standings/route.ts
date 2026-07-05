@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getStandings } from "@/lib/football-data";
+import { getStandings } from "@/lib/espn";
 
 export async function GET() {
   try {
