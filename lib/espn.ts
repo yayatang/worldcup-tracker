@@ -158,7 +158,7 @@ function normaliseTeam(t: RawTeam): EspnTeam {
     id: t.id,
     name: t.displayName,
     tla: t.abbreviation,
-    logo: t.logo ?? `https://a.espncdn.com/i/teamlogos/countries/500/${t.abbreviation.toLowerCase()}.png`,
+    logo: t.logo || `https://a.espncdn.com/i/teamlogos/countries/500/${t.abbreviation.toLowerCase()}.png`,
   };
 }
 
