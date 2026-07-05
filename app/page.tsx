@@ -46,10 +46,11 @@ async function UpcomingMatches() {
 
 async function RecentResults() {
   const matches = await getMatches();
-  const finished: EspnMatch[] = matches
-    .filter((m) => ["FINISHED", "EXTRA_TIME", "PENALTY"].includes(m.status))
-    .reverse()
-    .slice(0, 6);
+  // ascending (chronological) — most recently played games last, so we take the tail
+  const allFinished = matches.filter((m) =>
+    ["FINISHED", "EXTRA_TIME", "PENALTY"].includes(m.status)
+  );
+  const finished: EspnMatch[] = allFinished.slice(-6);
   if (finished.length === 0) return null;
   return (
     <section className="mb-8">

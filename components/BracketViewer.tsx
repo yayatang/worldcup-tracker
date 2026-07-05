@@ -145,7 +145,7 @@ function MatchCard({
       : match.status === "IN_PLAY" || match.status === "PAUSED"
       ? "● LIVE"
       : match.utcDate
-      ? new Date(match.utcDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      ? new Date(match.utcDate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "Asia/Jerusalem" })
       : "TBD";
 
   return (
@@ -339,7 +339,7 @@ function RoadToFinal({
               ) : (
                 <span className="text-neutral-400">
                   {match.utcDate
-                    ? new Date(match.utcDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    ? new Date(match.utcDate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "Asia/Jerusalem" })
                     : "TBD"}
                 </span>
               )}

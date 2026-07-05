@@ -11,12 +11,18 @@ const STATUS_BADGE: Record<string, { cls: string; label: string }> = {
   CANCELLED:  { cls: "bg-red-900 text-red-300",              label: "CXL"  },
 };
 
+const TZ = "Asia/Jerusalem";
+
 function formatMatchDate(utcDate: string) {
-  return new Date(utcDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  return new Date(utcDate).toLocaleDateString("en-US", {
+    weekday: "short", month: "short", day: "numeric", timeZone: TZ,
+  });
 }
 
 function formatMatchTime(utcDate: string) {
-  return new Date(utcDate).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+  return new Date(utcDate).toLocaleTimeString("en-US", {
+    hour: "2-digit", minute: "2-digit", timeZone: TZ,
+  });
 }
 
 export default function MatchCard({ match }: { match: EspnMatch }) {
