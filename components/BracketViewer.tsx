@@ -85,8 +85,8 @@ function TeamRow({
 }) {
   if (!team || isTbd(team.tla)) {
     return (
-      <div className="flex items-center h-8 px-2 text-neutral-600 text-xs italic gap-1.5">
-        <div className="w-4 h-4 rounded-full bg-neutral-800" />
+      <div className="flex items-center h-8 px-2 text-ink5 text-xs italic gap-1.5">
+        <div className="w-4 h-4 rounded-full bg-elevated" />
         TBD
       </div>
     );
@@ -94,27 +94,27 @@ function TeamRow({
   return (
     <div
       className={`flex items-center justify-between h-8 px-2 transition-colors ${
-        won ? "bg-green-900/40" : ""
-      } ${selected ? "bg-blue-900/50" : ""}`}
+        won ? "bg-win" : ""
+      } ${selected ? "bg-sel" : ""}`}
     >
       <div className="flex items-center gap-1.5 min-w-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={team.logo} alt="" className="w-4 h-4 object-contain flex-shrink-0" />
         <span
           className={`text-xs font-semibold truncate ${
-            won ? "text-white" : highlighted ? "text-blue-300" : "text-neutral-300"
+            won ? "text-ink" : highlighted ? "text-blue-600 dark:text-blue-300" : "text-ink3"
           }`}
         >
           {team.tla}
         </span>
         {seed && (
-          <span className="text-[10px] text-neutral-600 font-normal leading-none">{seed}</span>
+          <span className="text-[10px] text-ink5 font-normal leading-none">{seed}</span>
         )}
       </div>
       {score !== null && (
         <span
           className={`text-sm font-bold tabular-nums ml-2 ${
-            won ? "text-green-400" : "text-neutral-400"
+            won ? "text-accent" : "text-ink4"
           }`}
         >
           {score}
@@ -144,8 +144,8 @@ function MatchCard({
   const borderCls = isHighlighted
     ? "border-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
     : match.projected
-    ? "border-neutral-800 opacity-60"
-    : "border-neutral-700";
+    ? "border-line opacity-60"
+    : "border-line";
 
   const statusText =
     match.status === "FINISHED" || match.status === "EXTRA_TIME" || match.status === "PENALTY"
@@ -158,9 +158,9 @@ function MatchCard({
 
   return (
     <div
-      className={`w-44 flex-shrink-0 rounded-lg overflow-hidden border bg-neutral-900 transition-all ${borderCls}`}
+      className={`w-44 flex-shrink-0 rounded-lg overflow-hidden border bg-surface shadow-sm transition-all ${borderCls}`}
     >
-      <div className="border-b border-neutral-800">
+      <div className="border-b border-line">
         <TeamRow
           team={match.home}
           score={match.homeScore}
@@ -178,7 +178,7 @@ function MatchCard({
         highlighted={isHighlighted}
         seed={match.away && !isTbd(match.away.tla) ? seedMap[match.away.tla] : undefined}
       />
-      <div className="text-center text-[10px] text-neutral-600 py-0.5 border-t border-neutral-800">
+      <div className="text-center text-[10px] text-ink5 py-0.5 border-t border-line">
         {statusText}
       </div>
     </div>
@@ -199,7 +199,7 @@ function Connector({ slotH }: { slotH: number }) {
           top: slotH / 2,
           height: slotH,
           width: 1,
-          background: "#404040",
+          background: "var(--wire)",
         }}
       />
       {/* Horizontal segment at midpoint extending to right */}
@@ -210,7 +210,7 @@ function Connector({ slotH }: { slotH: number }) {
           right: 0,
           top: slotH - 0.5,
           height: 1,
-          background: "#404040",
+          background: "var(--wire)",
         }}
       />
     </div>
@@ -228,7 +228,7 @@ function LeftArm({ slotH }: { slotH: number }) {
           right: 0,
           top: "50%",
           height: 1,
-          background: "#404040",
+          background: "var(--wire)",
           transform: "translateY(-0.5px)",
         }}
       />
@@ -304,11 +304,11 @@ function RoadToFinal({
     : allMatches[0].match.away)!;
 
   return (
-    <div className="mt-6 bg-neutral-900 border border-blue-900/60 rounded-xl p-4">
+    <div className="mt-6 bg-surface border border-blue-300 dark:border-blue-900/60 rounded-xl p-4 shadow-sm">
       <div className="flex items-center gap-2 mb-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={team.logo} alt="" className="w-6 h-6 object-contain" />
-        <h3 className="font-bold text-blue-300">
+        <h3 className="font-bold text-blue-600 dark:text-blue-300">
           {team.name} — Road to the Final
         </h3>
       </div>
@@ -324,32 +324,32 @@ function RoadToFinal({
 
           return (
             <div key={i} className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg border text-xs ${
-              isLive ? "border-green-600 bg-green-950" :
-              won ? "border-green-800 bg-green-950/40" :
-              isPlayed ? "border-red-900 bg-red-950/30" :
-              "border-neutral-700 bg-neutral-800"
+              isLive ? "border-green-500 bg-green-100 dark:border-green-600 dark:bg-green-950" :
+              won ? "border-green-400 bg-green-50 dark:border-green-800 dark:bg-green-950/40" :
+              isPlayed ? "border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950/30" :
+              "border-line bg-elevated"
             }`}>
-              <span className="text-neutral-400 text-[10px] uppercase tracking-wide">{round}</span>
+              <span className="text-ink4 text-[10px] uppercase tracking-wide">{round}</span>
               <div className="flex items-center gap-1.5">
                 {opponent && !isTbd(opponent.tla) ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={opponent.logo} alt="" className="w-4 h-4 object-contain" />
-                    <span className="font-semibold text-neutral-200">vs {opponent.tla}</span>
+                    <span className="font-semibold text-ink2">vs {opponent.tla}</span>
                   </>
                 ) : (
-                  <span className="text-neutral-500 italic">vs TBD</span>
+                  <span className="text-ink4 italic">vs TBD</span>
                 )}
               </div>
               {isPlayed ? (
-                <span className={`font-bold ${won ? "text-green-400" : "text-red-400"}`}>
+                <span className={`font-bold ${won ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                   {teamScore} – {oppScore} {won ? "W" : "L"}
                   {match.statusDetail && match.statusDetail !== "FT" ? ` (${match.statusDetail})` : ""}
                 </span>
               ) : isLive ? (
-                <span className="text-green-400 font-bold">● LIVE {teamScore}–{oppScore}</span>
+                <span className="text-accent font-bold">● LIVE {teamScore}–{oppScore}</span>
               ) : (
-                <span className="text-neutral-400">
+                <span className="text-ink4">
                   {match.utcDate
                     ? new Date(match.utcDate).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "Asia/Jerusalem" })
                     : "TBD"}
@@ -377,11 +377,11 @@ function TeamPicker({
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-sm text-neutral-400">Highlight a team:</span>
+        <span className="text-sm text-ink4">Highlight a team:</span>
         {selected && (
           <button
             onClick={() => onSelect(null)}
-            className="text-xs text-neutral-500 hover:text-white underline"
+            className="text-xs text-ink4 hover:text-ink underline"
           >
             clear
           </button>
@@ -394,8 +394,8 @@ function TeamPicker({
             onClick={() => onSelect(selected === t.tla ? null : t.tla)}
             className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-medium transition-all ${
               selected === t.tla
-                ? "border-blue-500 bg-blue-950 text-white"
-                : "border-neutral-700 bg-neutral-900 text-neutral-300 hover:border-neutral-500"
+                ? "border-blue-500 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-white"
+                : "border-line bg-surface text-ink3 hover:border-ink4"
             }`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -430,7 +430,7 @@ export default function BracketViewer({ rounds, thirdPlace, allTeams, seedMap }:
 
   if (knockoutRounds.length === 0) {
     return (
-      <p className="text-neutral-500 text-sm py-12 text-center">
+      <p className="text-ink4 text-sm py-12 text-center">
         Knockout bracket not available yet.
       </p>
     );
@@ -511,7 +511,7 @@ export default function BracketViewer({ rounds, thirdPlace, allTeams, seedMap }:
       {/* 3rd place */}
       {thirdPlace && (
         <div className="mt-4">
-          <p className="text-xs text-neutral-500 uppercase tracking-widest mb-2">3rd Place</p>
+          <p className="text-xs text-ink4 uppercase tracking-widest mb-2">3rd Place</p>
           <MatchCard
             match={thirdPlace}
             selectedTla={selectedTla}

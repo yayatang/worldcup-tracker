@@ -1,117 +1,113 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
-import { getMatches, getStandings, type EspnMatch } from "@/lib/espn";
-import MatchCard from "@/components/MatchCard";
+import { getMatches, getStandings } from "@/lib/espn";
+import { buildBracket, type BracketMatch } from "@/lib/bracket";
 import GroupTable from "@/components/GroupTable";
+import BracketViewer from "@/components/BracketViewer";
 
-const Skeleton = () => (
-  <div className="bg-neutral-900 border border-neutral-800 rounded-xl h-28 animate-pulse" />
-);
+async function BracketSection() {
+  const [matches, groups] = await Promise.all([getMatches(), getStandings()]);
+  const rounds = buildBracket(matches, groups);
 
-async function LiveMatches() {
-  const matches = await getMatches();
-  const live = matches.filter((m) => m.status === "IN_PLAY" || m.status === "PAUSED");
-  if (live.length === 0) return null;
+  // Extract 3rd-place match separately so BracketViewer handles just the main bracket tree
+  const thirdIdx = rounds.findIndex((r) => r.slug === "3rd-place-match");
+  const thirdPlace: BracketMatch | null =
+    thirdIdx >= 0 ? rounds[thirdIdx].matches[0] ?? null : null;
+  const mainRounds = rounds.filter((r) => r.slug !== "3rd-place-match");
+
+  // Collect all real teams that appear in knockout rounds
+  const seen = new Set<string>();
+  const allTeams: { tla: string; name: string; logo: string }[] = [];
+  for (const r of mainRounds) {
+    for (const m of r.matches) {
+      for (const t of [m.home, m.away]) {
+        if (t && !t.tla.includes(" ") && !seen.has(t.tla)) {
+          seen.add(t.tla);
+          allTeams.push({ tla: t.tla, name: t.name, logo: t.logo });
+        }
+      }
+    }
+  }
+  allTeams.sort((a, b) => a.name.localeCompare(b.name));
+
+  // Build seed map: tla → "1A", "2B", "3C", etc.
+  const seedMap: Record<string, string> = {};
+  for (const g of groups) {
+    const letter = g.name.replace("Group ", "");
+    for (const row of g.rows) {
+      seedMap[row.team.tla] = `${row.position}${letter}`;
+    }
+  }
+
+  if (mainRounds.length === 0) {
+    return (
+      <p className="text-ink4 text-sm py-12 text-center">
+        Bracket not available yet — check back after the group stage.
+      </p>
+    );
+  }
+
   return (
-    <section className="mb-8">
-      <h2 className="text-lg font-bold mb-3 text-green-400">● Live Now</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {live.map((m) => <MatchCard key={m.id} match={m} />)}
-      </div>
-    </section>
+    <BracketViewer
+      rounds={mainRounds}
+      thirdPlace={thirdPlace}
+      allTeams={allTeams}
+      seedMap={seedMap}
+    />
   );
 }
 
-async function UpcomingMatches() {
-  const matches = await getMatches();
-  const now = Date.now();
-  const upcoming = matches
-    .filter((m) => m.status === "SCHEDULED" && new Date(m.utcDate).getTime() > now)
-    .slice(0, 6);
-  return (
-    <section className="mb-8">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-bold">Upcoming Matches</h2>
-        <a href="/schedule" className="text-sm text-green-400 hover:underline">Full Schedule →</a>
-      </div>
-      {upcoming.length === 0
-        ? <p className="text-neutral-500 text-sm">No upcoming matches scheduled.</p>
-        : <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {upcoming.map((m) => <MatchCard key={m.id} match={m} />)}
-          </div>}
-    </section>
-  );
-}
-
-async function RecentResults() {
-  const matches = await getMatches();
-  // ascending (chronological) — most recently played games last, so we take the tail
-  const allFinished = matches.filter((m) =>
-    ["FINISHED", "EXTRA_TIME", "PENALTY"].includes(m.status)
-  );
-  const finished: EspnMatch[] = allFinished.slice(-6);
-  if (finished.length === 0) return null;
-  return (
-    <section className="mb-8">
-      <h2 className="text-lg font-bold mb-3">Recent Results</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {finished.map((m) => <MatchCard key={m.id} match={m} />)}
-      </div>
-    </section>
-  );
-}
-
-async function GroupsSnapshot() {
+async function GroupsSection() {
   const groups = await getStandings();
   if (groups.length === 0) return null;
   return (
-    <section>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-bold">Group Standings</h2>
-        <a href="/bracket" className="text-sm text-green-400 hover:underline">Full Bracket →</a>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {groups.map((g) => <GroupTable key={g.name} group={g} />)}
+    <section className="mt-10">
+      <h2 className="text-lg font-bold mb-4">Group Stage Results</h2>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {groups.map((g) => (
+          <GroupTable key={g.name} group={g} />
+        ))}
       </div>
     </section>
   );
 }
-
-const GridSkeleton = ({ n }: { n: number }) => (
-  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-    {Array.from({ length: n }).map((_, i) => <Skeleton key={i} />)}
-  </div>
-);
 
 export default function HomePage() {
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-3xl font-black tracking-tight">
-          FIFA World Cup <span className="text-green-400">2026</span>
+          FIFA World Cup <span className="text-accent">2026</span> — Bracket
         </h1>
-        <p className="text-neutral-400 text-sm mt-1">
-          USA · Canada · Mexico &nbsp;·&nbsp; June 11 – July 19, 2026
+        <p className="text-ink3 text-sm mt-1">
+          Select a team to highlight their matches and see their road to the Final.
         </p>
       </div>
 
-      <Suspense fallback={null}><LiveMatches /></Suspense>
-
-      <Suspense fallback={<GridSkeleton n={6} />}><UpcomingMatches /></Suspense>
-
-      <Suspense fallback={null}><RecentResults /></Suspense>
-
       <Suspense
         fallback={
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-neutral-900 border border-neutral-800 rounded-xl h-44 animate-pulse" />
+          <div className="flex gap-4 overflow-x-hidden">
+            {[8, 4, 2, 1].map((n, i) => (
+              <div key={i} className="flex flex-col gap-2 flex-shrink-0">
+                <div className="h-3 w-20 bg-elevated rounded animate-pulse mb-1 mx-auto" />
+                {Array.from({ length: n }).map((_, j) => (
+                  <div
+                    key={j}
+                    className="w-44 bg-surface border border-line rounded-lg animate-pulse"
+                    style={{ height: 72 }}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         }
       >
-        <GroupsSnapshot />
+        <BracketSection />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <GroupsSection />
       </Suspense>
     </div>
   );

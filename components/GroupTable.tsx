@@ -2,13 +2,13 @@ import type { EspnGroup } from "@/lib/espn";
 
 export default function GroupTable({ group }: { group: EspnGroup }) {
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
-      <div className="px-4 py-2 bg-neutral-800 font-semibold text-sm text-neutral-200">
+    <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-sm">
+      <div className="px-4 py-2 bg-elevated font-semibold text-sm text-ink2">
         {group.name}
       </div>
       <table className="w-full text-xs">
         <thead>
-          <tr className="text-neutral-500 border-b border-neutral-800">
+          <tr className="text-ink4 border-b border-line">
             <th className="text-left px-3 py-1.5 font-medium w-5">#</th>
             <th className="text-left px-3 py-1.5 font-medium">Team</th>
             <th className="text-center px-2 py-1.5 font-medium">P</th>
@@ -16,18 +16,18 @@ export default function GroupTable({ group }: { group: EspnGroup }) {
             <th className="text-center px-2 py-1.5 font-medium">D</th>
             <th className="text-center px-2 py-1.5 font-medium">L</th>
             <th className="text-center px-2 py-1.5 font-medium">GD</th>
-            <th className="text-center px-2 py-1.5 font-medium font-bold text-white">Pts</th>
+            <th className="text-center px-2 py-1.5 font-medium font-bold text-ink">Pts</th>
           </tr>
         </thead>
         <tbody>
           {group.rows.map((row) => (
             <tr
               key={row.team.id}
-              className={`border-b border-neutral-800 last:border-0 ${
-                row.advanced ? "text-white" : row.position <= 2 ? "text-neutral-200" : "text-neutral-500"
+              className={`border-b border-line last:border-0 ${
+                row.advanced ? "text-ink" : row.position <= 2 ? "text-ink2" : "text-ink4"
               }`}
             >
-              <td className="px-3 py-2 text-neutral-500">{row.position}</td>
+              <td className="px-3 py-2 text-ink4">{row.position}</td>
               <td className="px-3 py-2">
                 <div className="flex items-center gap-1.5">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -42,7 +42,7 @@ export default function GroupTable({ group }: { group: EspnGroup }) {
               <td className="text-center px-2 py-2">
                 {row.goalDiff > 0 ? `+${row.goalDiff}` : row.goalDiff}
               </td>
-              <td className="text-center px-2 py-2 font-bold text-white">{row.points}</td>
+              <td className="text-center px-2 py-2 font-bold text-ink">{row.points}</td>
             </tr>
           ))}
         </tbody>

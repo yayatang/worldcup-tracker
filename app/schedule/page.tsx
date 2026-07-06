@@ -45,7 +45,7 @@ async function ScheduleContent() {
       {/* Stage pills */}
       <div className="flex flex-wrap gap-2 mb-8">
         {stages.map((s) => (
-          <span key={s} className="px-3 py-1 rounded-full text-xs bg-neutral-800 text-neutral-300">
+          <span key={s} className="px-3 py-1 rounded-full text-xs bg-elevated text-ink3">
             {stageName(s)}
           </span>
         ))}
@@ -55,12 +55,12 @@ async function ScheduleContent() {
       {upcoming.length > 0 && (
         <section className="mb-10">
           <h2 className="text-lg font-bold mb-4">
-            Upcoming <span className="text-neutral-500 font-normal text-sm">— Israel time</span>
+            Upcoming <span className="text-ink4 font-normal text-sm">— Israel time</span>
           </h2>
           <div className="space-y-6">
             {groupByDate(upcoming).map(([date, dayMatches]) => (
               <div key={date}>
-                <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-2 pb-1 border-b border-neutral-800">
+                <p className="text-xs font-semibold text-ink3 uppercase tracking-widest mb-2 pb-1 border-b border-line">
                   {date}
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -75,13 +75,13 @@ async function ScheduleContent() {
       {/* Past */}
       {past.length > 0 && (
         <section>
-          <h2 className="text-lg font-bold mb-4 text-neutral-400">
-            Past Results <span className="text-neutral-600 font-normal text-sm">— chronological</span>
+          <h2 className="text-lg font-bold mb-4 text-ink3">
+            Past Results <span className="text-ink4 font-normal text-sm">— chronological</span>
           </h2>
           <div className="space-y-6">
             {groupByDate(past).map(([date, dayMatches]) => (
               <div key={date}>
-                <p className="text-xs font-semibold text-neutral-600 uppercase tracking-widest mb-2 pb-1 border-b border-neutral-800">
+                <p className="text-xs font-semibold text-ink4 uppercase tracking-widest mb-2 pb-1 border-b border-line">
                   {date}
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -100,14 +100,14 @@ export default function SchedulePage() {
   return (
     <div>
       <h1 className="text-2xl font-black mb-2">Full Schedule</h1>
-      <p className="text-neutral-400 text-sm mb-6">
+      <p className="text-ink3 text-sm mb-6">
         Upcoming games first, then past results — all times in Israel time.
       </p>
       <Suspense
         fallback={
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="bg-neutral-900 border border-neutral-800 rounded-xl h-28 animate-pulse" />
+              <div key={i} className="bg-surface border border-line rounded-xl h-28 animate-pulse" />
             ))}
           </div>
         }
