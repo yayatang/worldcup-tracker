@@ -30,6 +30,14 @@ function formatMatchTime(utcDate: string) {
   });
 }
 
+// Short timezone label for the configured zone, e.g. "GMT+3"
+function tzLabel(utcDate: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: TZ, timeZoneName: "short",
+  }).formatToParts(new Date(utcDate));
+  return parts.find((p) => p.type === "timeZoneName")?.value ?? "";
+}
+
 // Compact "time until kickoff" label for the scheduled badge, e.g. "6h", "45m", "2d".
 function timeUntilKickoff(utcDate: string): string {
   const diffMs = new Date(utcDate).getTime() - Date.now();
@@ -89,7 +97,7 @@ export default function MatchCard({ match }: { match: EspnMatch }) {
         </div>
 
         {/* Score / Time */}
-        <div className="flex-shrink-0 text-center w-20">
+        <div className="flex-shrink-0 text-center w-24">
           {hasScore ? (
             <span className="text-2xl font-bold tabular-nums text-ink">
               {match.homeScore ?? "–"}&nbsp;:&nbsp;{match.awayScore ?? "–"}
@@ -98,6 +106,7 @@ export default function MatchCard({ match }: { match: EspnMatch }) {
             <div className="text-xs text-ink3">
               <div>{formatMatchDate(match.utcDate)}</div>
               <div className="font-bold text-ink text-sm">{formatMatchTime(match.utcDate)}</div>
+              <div className="text-[10px] text-ink4 leading-tight">{tzLabel(match.utcDate)}</div>
             </div>
           )}
           {match.statusDetail && hasScore && (
