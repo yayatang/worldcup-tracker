@@ -27,6 +27,7 @@ interface Props {
   rounds: BracketRound[];
   thirdPlace: BracketMatch | null;
   allTeams: TeamInfo[];
+  seedMap: Record<string, string>;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -73,12 +74,14 @@ function TeamRow({
   won,
   selected,
   highlighted,
+  seed,
 }: {
   team: { tla: string; name: string; logo: string } | null;
   score: number | null;
   won: boolean;
   selected: boolean;
   highlighted: boolean;
+  seed?: string;
 }) {
   if (!team || isTbd(team.tla)) {
     return (
@@ -104,6 +107,9 @@ function TeamRow({
         >
           {team.tla}
         </span>
+        {seed && (
+          <span className="text-[10px] text-neutral-600 font-normal leading-none">{seed}</span>
+        )}
       </div>
       {score !== null && (
         <span
@@ -122,10 +128,12 @@ function MatchCard({
   match,
   selectedTla,
   highlightedIds,
+  seedMap,
 }: {
   match: BracketMatch;
   selectedTla: string | null;
   highlightedIds: Set<string>;
+  seedMap: Record<string, string>;
 }) {
   const isHighlighted = !!(match.id && highlightedIds.has(match.id));
   const homeWon = match.winner === "home";
@@ -159,6 +167,7 @@ function MatchCard({
           won={homeWon}
           selected={homeSel}
           highlighted={isHighlighted}
+          seed={match.home && !isTbd(match.home.tla) ? seedMap[match.home.tla] : undefined}
         />
       </div>
       <TeamRow
@@ -167,6 +176,7 @@ function MatchCard({
         won={awayWon}
         selected={awaySel}
         highlighted={isHighlighted}
+        seed={match.away && !isTbd(match.away.tla) ? seedMap[match.away.tla] : undefined}
       />
       <div className="text-center text-[10px] text-neutral-600 py-0.5 border-t border-neutral-800">
         {statusText}
@@ -232,12 +242,14 @@ function MatchColumn({
   depth,
   selectedTla,
   highlightedIds,
+  seedMap,
   showLeftArm = true,
 }: {
   matches: BracketMatch[];
   depth: number;
   selectedTla: string | null;
   highlightedIds: Set<string>;
+  seedMap: Record<string, string>;
   showLeftArm?: boolean;
 }) {
   const slotH = UNIT * Math.pow(2, depth);
@@ -249,7 +261,7 @@ function MatchColumn({
           style={{ height: slotH, display: "flex", alignItems: "center" }}
         >
           {showLeftArm && depth > 0 && <LeftArm slotH={slotH} />}
-          <MatchCard match={m} selectedTla={selectedTla} highlightedIds={highlightedIds} />
+          <MatchCard match={m} selectedTla={selectedTla} highlightedIds={highlightedIds} seedMap={seedMap} />
         </div>
       ))}
     </div>
@@ -398,7 +410,7 @@ function TeamPicker({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function BracketViewer({ rounds, thirdPlace, allTeams }: Props) {
+export default function BracketViewer({ rounds, thirdPlace, allTeams, seedMap }: Props) {
   const [selectedTla, setSelectedTla] = useState<string | null>(null);
 
   const knockoutRounds = useMemo(
@@ -440,6 +452,7 @@ export default function BracketViewer({ rounds, thirdPlace, allTeams }: Props) {
                 depth={0}
                 selectedTla={selectedTla}
                 highlightedIds={highlightedIds}
+                seedMap={seedMap}
                 showLeftArm={false}
               />
               <ConnectorColumn count={4} slotH={UNIT} />
@@ -453,6 +466,7 @@ export default function BracketViewer({ rounds, thirdPlace, allTeams }: Props) {
                 depth={hasR16 ? 1 : 0}
                 selectedTla={selectedTla}
                 highlightedIds={highlightedIds}
+                seedMap={seedMap}
                 showLeftArm={!hasR16}
               />
               <ConnectorColumn count={2} slotH={hasR16 ? UNIT * 2 : UNIT} />
@@ -466,6 +480,7 @@ export default function BracketViewer({ rounds, thirdPlace, allTeams }: Props) {
                 depth={hasR16 ? 2 : qf.length > 0 ? 1 : 0}
                 selectedTla={selectedTla}
                 highlightedIds={highlightedIds}
+                seedMap={seedMap}
               />
               <ConnectorColumn count={1} slotH={hasR16 ? UNIT * 4 : qf.length > 0 ? UNIT * 2 : UNIT} />
             </>
@@ -477,6 +492,7 @@ export default function BracketViewer({ rounds, thirdPlace, allTeams }: Props) {
               depth={hasR16 ? 3 : qf.length > 0 ? 2 : sf.length > 0 ? 1 : 0}
               selectedTla={selectedTla}
               highlightedIds={highlightedIds}
+              seedMap={seedMap}
             />
           )}
 
@@ -500,6 +516,7 @@ export default function BracketViewer({ rounds, thirdPlace, allTeams }: Props) {
             match={thirdPlace}
             selectedTla={selectedTla}
             highlightedIds={highlightedIds}
+            seedMap={seedMap}
           />
         </div>
       )}

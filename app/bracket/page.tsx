@@ -31,6 +31,15 @@ async function BracketSection() {
   }
   allTeams.sort((a, b) => a.name.localeCompare(b.name));
 
+  // Build seed map: tla → "1A", "2B", "3C", etc.
+  const seedMap: Record<string, string> = {};
+  for (const g of groups) {
+    const letter = g.name.replace("Group ", "");
+    for (const row of g.rows) {
+      seedMap[row.team.tla] = `${row.position}${letter}`;
+    }
+  }
+
   if (mainRounds.length === 0) {
     return (
       <p className="text-neutral-500 text-sm py-12 text-center">
@@ -44,6 +53,7 @@ async function BracketSection() {
       rounds={mainRounds}
       thirdPlace={thirdPlace}
       allTeams={allTeams}
+      seedMap={seedMap}
     />
   );
 }
