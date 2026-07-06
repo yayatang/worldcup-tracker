@@ -167,8 +167,13 @@ function parseEvent(e: RawEvent): EspnMatch {
   const { status, detail } = parseStatus(comp.status.type, comp.status.displayClock);
   const home = comp.competitors.find((c) => c.homeAway === "home")!;
   const away = comp.competitors.find((c) => c.homeAway === "away")!;
-  const homeScore = home?.score !== "" && home?.score !== undefined ? Number(home.score) : null;
-  const awayScore = away?.score !== "" && away?.score !== undefined ? Number(away.score) : null;
+  // ESPN returns "0" for games that haven't kicked off — only surface a score
+  // once the match is live or played, so scheduled games don't read "0 : 0".
+  const hasScore = ["IN_PLAY", "PAUSED", "FINISHED", "EXTRA_TIME", "PENALTY"].includes(status);
+  const parseScore = (raw?: string) =>
+    hasScore && raw !== "" && raw !== undefined ? Number(raw) : null;
+  const homeScore = parseScore(home?.score);
+  const awayScore = parseScore(away?.score);
 
   return {
     id: e.id,
