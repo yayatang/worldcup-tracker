@@ -30,8 +30,21 @@ function formatMatchTime(utcDate: string) {
   });
 }
 
+// Compact "time until kickoff" label for the scheduled badge, e.g. "6h", "45m", "2d".
+function timeUntilKickoff(utcDate: string): string {
+  const diffMs = new Date(utcDate).getTime() - Date.now();
+  if (diffMs <= 0) return "Soon";
+  const mins = Math.round(diffMs / 60000);
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
 export default function MatchCard({ match }: { match: EspnMatch }) {
   const badge = STATUS_BADGE[match.status] ?? STATUS_BADGE.SCHEDULED;
+  // For scheduled games, show hours/minutes until kickoff instead of "Soon".
+  const badgeLabel = badge === STATUS_BADGE.SCHEDULED ? timeUntilKickoff(match.utcDate) : badge.label;
   const hasScore = ["IN_PLAY", "PAUSED", "FINISHED", "EXTRA_TIME", "PENALTY"].includes(match.status);
   const homeWon = match.winner === "home";
   const awayWon = match.winner === "away";
@@ -61,7 +74,7 @@ export default function MatchCard({ match }: { match: EspnMatch }) {
           </span>
         </div>
         <span className={`text-xs font-semibold px-2 py-0.5 rounded shrink-0 ${badge.cls}`}>
-          {badge.label}
+          {badgeLabel}
         </span>
       </div>
 
