@@ -13,6 +13,11 @@ const STATUS_BADGE: Record<string, { cls: string; label: string }> = {
 
 const TZ = "Asia/Jerusalem";
 
+// YYYY-MM-DD in Israel time, for date comparisons
+function ilKey(utcDate: string | Date) {
+  return new Date(utcDate).toLocaleDateString("en-CA", { timeZone: TZ });
+}
+
 function formatMatchDate(utcDate: string) {
   return new Date(utcDate).toLocaleDateString("en-US", {
     weekday: "short", month: "short", day: "numeric", timeZone: TZ,
@@ -31,13 +36,31 @@ export default function MatchCard({ match }: { match: EspnMatch }) {
   const homeWon = match.winner === "home";
   const awayWon = match.winner === "away";
 
+  const todayKey = ilKey(new Date());
+  const matchKey = ilKey(match.utcDate);
+  const isToday = matchKey === todayKey;
+  const isPast = matchKey < todayKey; // played on an earlier day
+
+  const containerCls = isToday
+    ? "border-green-500 ring-2 ring-green-500/30 shadow-md"
+    : isPast
+    ? "border-line opacity-60"
+    : "border-line";
+
   return (
-    <div className="bg-surface border border-line rounded-xl p-4 shadow-sm">
+    <div className={`bg-surface border rounded-xl p-4 shadow-sm transition-opacity ${containerCls}`}>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-ink4">
-          {match.group ?? match.stage.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-        </span>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded ${badge.cls}`}>
+        <div className="flex items-center gap-1.5 min-w-0">
+          {isToday && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-600 text-white shrink-0">
+              TODAY
+            </span>
+          )}
+          <span className="text-xs text-ink4 truncate">
+            {match.group ?? match.stage.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+          </span>
+        </div>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded shrink-0 ${badge.cls}`}>
           {badge.label}
         </span>
       </div>

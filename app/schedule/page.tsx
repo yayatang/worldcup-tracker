@@ -11,7 +11,9 @@ const SLUG_ORDER = [
   "quarterfinals", "semifinals", "3rd-place-match", "final",
 ];
 
-const PAST_STATUSES = new Set(["FINISHED", "EXTRA_TIME", "PENALTY", "POSTPONED", "CANCELLED"]);
+function ilKey(utcDate: string | Date) {
+  return new Date(utcDate).toLocaleDateString("en-CA", { timeZone: TZ });
+}
 
 function ilDate(utcDate: string) {
   return new Date(utcDate).toLocaleDateString("en-US", {
@@ -32,9 +34,12 @@ function groupByDate(matches: EspnMatch[]): [string, EspnMatch[]][] {
 
 async function ScheduleContent() {
   const matches = await getMatches(); // already sorted ascending by utcDate
+  const todayKey = ilKey(new Date());
 
-  const upcoming = matches.filter((m) => !PAST_STATUSES.has(m.status));
-  const past = matches.filter((m) => PAST_STATUSES.has(m.status)); // already ascending (chronological)
+  // Split by Israel calendar day relative to today
+  const today = matches.filter((m) => ilKey(m.utcDate) === todayKey);
+  const future = matches.filter((m) => ilKey(m.utcDate) > todayKey);
+  const past = matches.filter((m) => ilKey(m.utcDate) < todayKey); // ascending (chronological)
 
   const stages = [...new Set(matches.map((m) => m.stage))].sort(
     (a, b) => SLUG_ORDER.indexOf(a) - SLUG_ORDER.indexOf(b)
@@ -51,14 +56,30 @@ async function ScheduleContent() {
         ))}
       </div>
 
+      {/* Today — emphasized */}
+      {today.length > 0 && (
+        <section className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xs font-bold px-2 py-0.5 rounded bg-green-600 text-white">TODAY</span>
+            <h2 className="text-lg font-bold">
+              {ilDate(today[0].utcDate)}{" "}
+              <span className="text-ink4 font-normal text-sm">— Israel time</span>
+            </h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {today.map((m) => <MatchCard key={m.id} match={m} />)}
+          </div>
+        </section>
+      )}
+
       {/* Upcoming */}
-      {upcoming.length > 0 && (
+      {future.length > 0 && (
         <section className="mb-10">
           <h2 className="text-lg font-bold mb-4">
             Upcoming <span className="text-ink4 font-normal text-sm">— Israel time</span>
           </h2>
           <div className="space-y-6">
-            {groupByDate(upcoming).map(([date, dayMatches]) => (
+            {groupByDate(future).map(([date, dayMatches]) => (
               <div key={date}>
                 <p className="text-xs font-semibold text-ink3 uppercase tracking-widest mb-2 pb-1 border-b border-line">
                   {date}
@@ -72,7 +93,7 @@ async function ScheduleContent() {
         </section>
       )}
 
-      {/* Past */}
+      {/* Past — dimmed */}
       {past.length > 0 && (
         <section>
           <h2 className="text-lg font-bold mb-4 text-ink3">

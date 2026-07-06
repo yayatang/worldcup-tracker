@@ -66,6 +66,11 @@ function reorderR16(matches: BracketMatch[]): BracketMatch[] {
   return R16_REORDER.map((i) => matches[i]);
 }
 
+// YYYY-MM-DD in Israel time
+function ilKey(d: Date) {
+  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function TeamRow({
@@ -141,8 +146,12 @@ function MatchCard({
   const homeSel = teamSide(match, selectedTla) === "home";
   const awaySel = teamSide(match, selectedTla) === "away";
 
+  const isToday = match.utcDate ? ilKey(new Date(match.utcDate)) === ilKey(new Date()) : false;
+
   const borderCls = isHighlighted
     ? "border-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
+    : isToday
+    ? "border-green-500 ring-2 ring-green-500/30"
     : match.projected
     ? "border-line opacity-60"
     : "border-line";
